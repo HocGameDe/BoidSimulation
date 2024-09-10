@@ -20,7 +20,7 @@ public class BoidMovements : MonoBehaviour
     private float turnSpeed = 10f;
     private TransformAccessArray transformAccessArray;
     private NativeArray<float2> velocities;
-   // private NativeArray<BoidData> boidData;
+    // private NativeArray<BoidData> boidData;
     //private struct BoidData
     //{
     //    public float3 position;
@@ -32,7 +32,7 @@ public class BoidMovements : MonoBehaviour
         var boidCount = boids.boidTransform.Count;
         transformAccessArray = new TransformAccessArray(boidCount);
         velocities = new NativeArray<float2>(boidCount, Allocator.Persistent);
-       // boidData = new NativeArray<BoidData>(boidCount, Allocator.Persistent);
+        // boidData = new NativeArray<BoidData>(boidCount, Allocator.Persistent);
         for (int i = 0; i < boidCount; i++)
         {
             transformAccessArray.Add(boids.boidTransform[i].transform);
@@ -61,6 +61,7 @@ public class BoidMovements : MonoBehaviour
             //boidData = boidData,
             quadTree = quadTree,
             velocities = velocities,
+            quadBounds = quadBounds,
             turnSpeed = turnSpeed,
             forwardSpeed = forwardSpeed,
             radius = radius,
@@ -74,7 +75,7 @@ public class BoidMovements : MonoBehaviour
     {
         transformAccessArray.Dispose();
         quadTree.Dispose();
-       //boidData.Dispose();
+        //boidData.Dispose();
         velocities.Dispose();
     }
     private void OnDrawGizmosSelected()
@@ -104,11 +105,13 @@ public class BoidMovements : MonoBehaviour
         //public NativeArray<BoidData> boidData;
         public NativeQuadTree<float2> quadTree;
         public NativeArray<float2> velocities;
+        public QuadBounds quadBounds;
         public float turnSpeed;
         public float forwardSpeed;
         public float radius;
         public float visionAngle;
         public float deltaTime;
+
         public void Execute(int index, TransformAccess transform)
         {
             Vector3 velocity = (Vector2)velocities[index];
@@ -123,26 +126,30 @@ public class BoidMovements : MonoBehaviour
         }
         private Vector2 CalculateVelocity(TransformAccess transform)
         {
+            float3 currentPosition = transform.position;
+            Vector2 currentForward = transform.localToWorldMatrix.MultiplyVector(Vector3.forward);
             var separation = Vector2.zero;
             var aligment = Vector2.zero;
             var cohesion = Vector2.zero;
-            Vector2 currentForward = transform.localToWorldMatrix.MultiplyVector(Vector3.forward);
-            var boidsInRange = BoidsInRange(transform.position);
+            var boidsInRange = BoidsInRange(currentPosition);
             var boidCount = boidsInRange.Length;
             for (var i = 0; i < boidCount; i++)
             {
-                separation -= Separation(transform.position, boidsInRange[i].position.xy);
+                separation -= Separation(currentPosition.xy, boidsInRange[i].position.xy);
                 aligment += (Vector2)boidsInRange[i].element.xy;
                 cohesion += (Vector2)boidsInRange[i].position.xy;
             }
             separation = separation.normalized;
             aligment = Aligment(aligment, currentForward, boidCount);
-            cohesion = Cohesion(cohesion, transform.position, boidCount);
+            cohesion = Cohesion(cohesion, currentPosition.xy, boidCount);
             Vector3 velocity = (currentForward
                 + separation
                 + 0.2f * aligment
                 + cohesion
                 ).normalized * forwardSpeed;
+
+            transform = Boundary(transform, currentPosition);
+            boidsInRange.Dispose();
             return velocity;
         }
         //private NativeArray<BoidData> BoidsInRange(float3 position, float2 forward)
@@ -194,6 +201,26 @@ public class BoidMovements : MonoBehaviour
             else center = position;
 
             return (center - position).normalized;
+        }
+        private readonly TransformAccess Boundary(TransformAccess transform, float3 currentPosition)
+        {
+            float2 litmitBounds = quadBounds.extents * 0.95f;
+            if (currentPosition.x > quadBounds.center.x + litmitBounds.x ||
+                currentPosition.x < quadBounds.center.x - litmitBounds.x)
+            {
+                currentPosition.x = currentPosition.x > 0 ?
+                quadBounds.center.x - litmitBounds.x : quadBounds.center.x + litmitBounds.x;
+                transform.position = currentPosition;
+            }
+            if (currentPosition.y > quadBounds.center.y + litmitBounds.y ||
+                currentPosition.y < quadBounds.center.y - litmitBounds.y)
+            {
+                currentPosition.y = currentPosition.y > 0 ?
+                quadBounds.center.y - litmitBounds.y : quadBounds.center.y + litmitBounds.y;
+                transform.position = currentPosition;
+            }
+
+            return transform;
         }
     }
 }

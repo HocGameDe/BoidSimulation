@@ -393,8 +393,8 @@ MonoBehaviour:
       x: 40
       y: 25
   quadTree:
-    maxDepth: 8
-    maxLeafElements: 128
+    maxDepth: 0
+    maxLeafElements: 0
     elementsCount: 0
 --- !u!4 &1680325758
 Transform:
