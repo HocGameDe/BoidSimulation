@@ -78,11 +78,8 @@ public class BoidMovements : MonoBehaviour
         //boidData.Dispose();
         velocities.Dispose();
     }
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireCube((Vector2)quadBounds.center, (Vector2)quadBounds.Size);
-    }
+    private void OnDrawGizmosSelected() => quadTree.DrawGizmos(quadBounds);
+
     [BurstCompile]
     private struct UpdateQuadElementJob : IJobParallelForTransform
     {

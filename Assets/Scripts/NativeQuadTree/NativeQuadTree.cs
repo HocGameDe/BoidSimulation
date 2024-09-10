@@ -31,9 +31,9 @@ public unsafe partial struct NativeQuadTree<T> : IDisposable where T : unmanaged
     UnsafeList<QuadNode>* nodes;
 
     QuadBounds bounds;
+    [SerializeField] int elementsCount;
     [SerializeField] byte maxDepth;
     [SerializeField] ushort maxLeafElements;
-    [SerializeField] public int elementsCount;
 
     public NativeQuadTree(QuadBounds bounds, Allocator allocator = Allocator.Temp,
         byte maxDepth = 6, ushort maxLeafElements = 16, int initialElementsCapacity = 256)
@@ -137,6 +137,28 @@ public unsafe partial struct NativeQuadTree<T> : IDisposable where T : unmanaged
     public void RangeQuery(QuadBounds bounds, NativeList<QuadElement<T>> results)
     {
         new QuadTreeRangeQuery(this, bounds, results);
+    }
+    public void DrawGizmos(QuadBounds boundsParent = default, int prevousOffset = 1, int depth = 1)
+    {
+        Gizmos.DrawWireCube((Vector2)boundsParent.center, (Vector2)boundsParent.Size);
+        if (lookup == null) return;
+        else if (boundsParent.Equals(default(QuadBounds))) boundsParent = bounds;
+
+        var depthSize = LookupTables.DepthSizeLookup[maxDepth - depth + 1];
+        for (int i = 0; i < 4; i++)
+        {
+            var boundsChild = boundsParent.GetBoundsChild(i);
+            int atIndex = prevousOffset + i * depthSize;
+            var elementCount = UnsafeUtility.ReadArrayElement<int>(lookup->Ptr, atIndex);
+            if (elementCount > maxLeafElements && depth < maxDepth)
+            {
+                DrawGizmos(boundsChild, atIndex + 1, depth + 1);
+            }
+            else if (elementCount != 0)
+            {
+                Gizmos.DrawWireCube((Vector2)boundsChild.center, (Vector2)boundsChild.Size);
+            }
+        }
     }
     public void Clear()
     {
