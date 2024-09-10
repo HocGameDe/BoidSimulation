@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public struct QuadElement<T> where T : unmanaged
@@ -17,6 +18,7 @@ public struct QuadNode
     public ushort count;
     public bool isLeaf;
 }
+[Serializable]
 public unsafe partial struct NativeQuadTree<T> : IDisposable where T : unmanaged
 {
     [NativeDisableUnsafePtrRestriction]
@@ -29,9 +31,9 @@ public unsafe partial struct NativeQuadTree<T> : IDisposable where T : unmanaged
     UnsafeList<QuadNode>* nodes;
 
     QuadBounds bounds;
-    byte maxDepth;
-    ushort maxLeafElements;
-    int elementsCount;
+    [SerializeField] byte maxDepth;
+    [SerializeField] ushort maxLeafElements;
+    [SerializeField] public int elementsCount;
 
     public NativeQuadTree(QuadBounds bounds, Allocator allocator = Allocator.Temp,
         byte maxDepth = 6, ushort maxLeafElements = 16, int initialElementsCapacity = 256)
@@ -84,7 +86,7 @@ public unsafe partial struct NativeQuadTree<T> : IDisposable where T : unmanaged
             for (int depth = maxDepth; depth >= 0; depth--)
             {
                 (*(int*)((IntPtr)lookup->Ptr + atIndex * sizeof(int)))++;
-                atIndex = IncrementIndex(mortonCodes[i], depth);
+                atIndex += IncrementIndex(mortonCodes[i], depth);
             }
         }
         RecursivePrepareLeaves(1, 1);
@@ -102,9 +104,11 @@ public unsafe partial struct NativeQuadTree<T> : IDisposable where T : unmanaged
                     UnsafeUtility.WriteArrayElement(nodes->Ptr, atIndex, node);
                     break;
                 }
-                atIndex = IncrementIndex(mortonCodes[i], depth);
+                atIndex += IncrementIndex(mortonCodes[i], depth);
             }
         }
+
+        mortonCodes.Dispose();
     }
 
     private void RecursivePrepareLeaves(int previousOffset, int depth)
@@ -127,7 +131,7 @@ public unsafe partial struct NativeQuadTree<T> : IDisposable where T : unmanaged
     }
     private int IncrementIndex(int mortonCode, int depth)
     {
-        int shiftedMortonCode = (mortonCode >> (depth - 1) * 2) & 0b11;
+        int shiftedMortonCode = (mortonCode >> ((depth - 1) * 2)) & 0b11;
         return (LookupTables.DepthSizeLookup[depth] * shiftedMortonCode) + 1;
     }
     public void RangeQuery(QuadBounds bounds, NativeList<QuadElement<T>> results)

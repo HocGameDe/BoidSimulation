@@ -1,5 +1,6 @@
 ﻿using System;
 using Unity.Mathematics;
+using UnityEngine;
 
 [Serializable]
 public struct QuadBounds
@@ -10,6 +11,7 @@ public struct QuadBounds
     public float2 Haft => extents * .5f;
     public float2 Min => center - extents;
     public float2 Max => center + extents;
+
     public float Radius => math.length(extents);
 
     public QuadBounds(float2 center, float2 extents) => (this.center, this.extents) = (center, extents);
@@ -20,11 +22,14 @@ public struct QuadBounds
         math.abs(center.y - bounds.center.y) <= (extents.y + bounds.extents.y);
     public bool ContainsCircle(float2 point) => math.lengthsq(point - center) <= math.lengthsq(Radius);
     public bool ContainsCircle(QuadBounds bounds) =>
-        ContainsCircle(bounds.GetCorner(0)) && ContainsCircle(bounds.GetCorner(1)) ||
+        ContainsCircle(bounds.GetCorner(0)) && ContainsCircle(bounds.GetCorner(1)) &&
         ContainsCircle(bounds.GetCorner(2)) && ContainsCircle(bounds.GetCorner(3));
-    public bool IntersectsCircle(QuadBounds bounds) =>
-        ContainsCircle(bounds.GetCorner(0)) || ContainsCircle(bounds.GetCorner(1)) ||
-        ContainsCircle(bounds.GetCorner(2)) || ContainsCircle(bounds.GetCorner(3));
+    public bool IntersectsCircle(QuadBounds bounds)
+    {
+        float2 closestPoint = math.clamp(center, bounds.Min, bounds.Max);
+        float distanceSquared = math.lengthsq(center - closestPoint);
+        return distanceSquared <= math.length(Radius);
+    }
     public float2 GetCorner(int zIndexChild)
     {
         return zIndexChild switch
