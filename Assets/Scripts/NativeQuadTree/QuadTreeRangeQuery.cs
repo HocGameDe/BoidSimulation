@@ -2,6 +2,7 @@
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
+
 public unsafe partial struct NativeQuadTree<T> where T : unmanaged
 {
     public struct QuadTreeRangeQuery
@@ -18,10 +19,11 @@ public unsafe partial struct NativeQuadTree<T> where T : unmanaged
             count = 0;
             fastResults = (UnsafeList<T>*)NativeListUnsafeUtility.GetInternalListDataPtrUnchecked(ref results);
 
-            RecursiveRangeQuery(tree.bounds, false, 1, 1);
+            RecursiveRangeQuery(tree.bounds);
             fastResults->Length = count;
         }
-        public void RecursiveRangeQuery(QuadBounds boundsParent, bool containedParent, int previousOffset, int depth)
+        public void RecursiveRangeQuery(QuadBounds boundsParent, bool containedParent = false,
+            int prevousOffset = 1, int depth = 1)
         {
             var totalNodesCount = count + 4 * tree.maxLeafElements;
             if (totalNodesCount > fastResults->Capacity)
@@ -40,7 +42,7 @@ public unsafe partial struct NativeQuadTree<T> where T : unmanaged
                     else if (!bounds.IntersectsCircle(boundsChild)) continue;
                 }
 
-                var atIndex = previousOffset + i * depthSize;
+                var atIndex = prevousOffset + i * depthSize;
                 var elementCount = UnsafeUtility.ReadArrayElement<int>(tree.lookup->Ptr, atIndex);
                 if (elementCount > tree.maxLeafElements && depth < tree.maxDepth)
                 {

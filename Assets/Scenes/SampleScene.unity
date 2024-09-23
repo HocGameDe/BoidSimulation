@@ -277,7 +277,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 25
+  orthographic size: 30
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -393,9 +393,9 @@ MonoBehaviour:
       x: 40
       y: 25
   quadTree:
+    elementsCount: 0
     maxDepth: 0
     maxLeafElements: 0
-    elementsCount: 0
 --- !u!4 &1680325758
 Transform:
   m_ObjectHideFlags: 0

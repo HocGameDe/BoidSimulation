@@ -1,5 +1,5 @@
-﻿public static class LookupTables
-{
+public static class LookupTables 
+ {
     public static readonly ushort[] MortonLookup =
     {
 		//	0       1       100     101     10000   10001   10100   10101
